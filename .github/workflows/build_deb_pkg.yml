@@ -1,0 +1,58 @@
+name: build librespot package for debian bookworm
+
+on:
+  pull_request:
+  push:
+    paths-ignore:
+      - '*.md'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        architecture: [amd64, armhf, arm64]
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          repository: librespot-org/librespot
+          ref: v0.6.0
+          path: librespot
+      - name: Build rust binary
+        uses: catango/build-rust-deb-action@master
+        id: build
+        with:
+          host-build-deps: libclang-dev cmake git
+          target-build-deps: libpulse-dev libasound2-dev
+          target-arch: ${{ matrix.architecture }}
+          rust-buildtools: bindgen-cli@0.69.5
+          rust-features: pulseaudio-backend
+          rust-version: 1.82.0
+          source-dir: librespot
+          docker-image: debian:bookworm-slim
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: librespot_0.6.0-bookworm_${{ matrix.architecture }}
+          path: ${{ steps.build.outputs.artifact-dir }}
+
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: librespot*/librespot*.deb
+          tag_name: ${{ github.ref_name }}
+          body: "Automated release of ${{ github.ref_name }}."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
