@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: librespot-org/librespot
-          ref: v0.7.0
+          ref: v0.7.1
           path: librespot
       - name: Build rust binary
         uses: catango/build-rust-deb-action@master
@@ -35,7 +35,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: librespot_0.7.0-${{ matrix.debian }}_${{ matrix.architecture }}
+          name: librespot_0.7.1-${{ matrix.debian }}_${{ matrix.architecture }}
           path: ${{ steps.build.outputs.artifact-dir }}
 
 
