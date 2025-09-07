@@ -1,4 +1,4 @@
-name: build librespot package for debian bookworm
+name: build librespot package for debian bookworm and trixie
 
 on:
   pull_request:
@@ -11,6 +11,7 @@ jobs:
     strategy:
       matrix:
         architecture: [amd64, armhf, arm64]
+        debian: [bookworm, trixie]
 
     runs-on: ubuntu-latest
     steps:
@@ -30,11 +31,11 @@ jobs:
           rust-features: pulseaudio-backend
           rust-version: 1.89.0
           source-dir: librespot
-          docker-image: debian:bookworm-slim
+          docker-image: debian:${{ matrix.debian }}-slim
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: librespot_0.7.0-bookworm_${{ matrix.architecture }}
+          name: librespot_0.7.0-${{ matrix.debian }}_${{ matrix.architecture }}
           path: ${{ steps.build.outputs.artifact-dir }}
 
 
@@ -47,10 +48,12 @@ jobs:
     steps:
       - name: Download Artifacts
         uses: actions/download-artifact@v4
+      - name: Zip artifacts for archiving
+        run: for i in */; do zip -r "${i%/}.zip" "$i"; done
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: librespot*/librespot*.deb
+          files: librespot*.zip
           tag_name: ${{ github.ref_name }}
           body: "Automated release of ${{ github.ref_name }}."
         env:
